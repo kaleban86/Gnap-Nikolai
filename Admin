@@ -1,0 +1,136 @@
+package com.app.sms.reader.impl;
+
+import com.app.dao.Dao;
+import com.app.dao.DaoImpl;
+import com.app.sms.sending.sms.TerminalSendSMS;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class  ReadSmsAdministrator extends TerminalSendSMS {
+
+
+    public static void readSmsAdministrator() throws SQLException, InterruptedException {
+
+
+
+        Connection con = getConnection();
+        String query = "SELECT SMS FROM log_sms ORDER BY DateEvent DESC LIMIT 1";
+
+
+        try (Statement stmt = con.createStatement()) {
+
+            ResultSet rs = stmt.executeQuery(query);
+
+            while (rs.next()) {
+                String TextMessages = rs.getString("SMS");
+                String SMS = "?";
+                String SMS1 = "nnnn?";
+
+                if (TextMessages.equals(SMS1)){
+                    sendSmsNameCompani();
+                }
+                //if (TextMessages.equals(SMS)){
+                    char[] array = SMS1.toCharArray();
+                    int numberCount=0;
+                    for(int i=0;i<array.length;i++){
+                        if(Character.isDigit(array[i])){
+                            numberCount++;
+                        }
+                    }
+
+                 if(numberCount==4){
+
+                   sendSMS();
+                }else {
+
+                    TextMessages = TextMessages;
+                    Pattern pattern = Pattern.compile("\\d+\\S?\\d*");
+                    Matcher matcher = pattern.matcher(TextMessages);
+                    while (matcher.find()) {
+                        String Text = matcher.group(0);
+                        if (Text.replaceAll("\\D", " ").length() == Text.length()) {
+
+                            int b = Integer.parseInt(Text);
+
+                            if (b > 0){
+                                Dao dao= new DaoImpl();
+                                dao.smsSearchAdmin(Text);
+                                System.out.println("Admin");
+
+
+
+
+
+
+                            }else {
+
+                                sendSMS();
+
+
+
+                            }
+
+
+
+                            }
+
+                        }
+                }
+
+
+            }
+
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
+
+    private static Connection getConnection() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
