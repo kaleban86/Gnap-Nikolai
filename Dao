@@ -1,0 +1,463 @@
+package com.app.dao;
+
+import com.app.sms.reader.impl.SimpleSmsReader;
+import com.app.text.Decoder;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.sql.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static com.app.sms.reader.impl.ClientReadingSms.clientReadingSms;
+
+public  class DaoImpl extends SimpleSmsReader implements Dao , Decoder {
+
+
+
+    DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    @Override
+    public void save(  String SMS,String DateEvent) throws IOException {
+        try (Connection c = getConnection()) {
+            String sql = "INSERT INTO log_sms (SMS,DateEvent) VALUES (?,?)";
+            PreparedStatement ps = c.prepareStatement(sql);
+          //  ps.setString(1, idPhone);
+            ps.setString(1, SMS);
+            Date date =  format.parse(DateEvent);
+            ps.setTimestamp(2, new Timestamp(date.getTime()));
+            ps.execute();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+
+
+    }
+    private Connection getConnection() throws SQLException {
+
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    // Если номер Администратора
+    @Override
+    public boolean isadminNamber(String phoneanmber) {
+        try(Connection c = getConnection()){
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ? AND Admin = 1";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phoneanmber);
+            ResultSet rs =   ps.executeQuery();
+            while (rs.next()){
+                int COUNTphonenanmber =   rs.getInt(1);
+
+                if (COUNTphonenanmber > 0){
+
+
+                    readSmsAdministrator();
+
+
+                }else {
+
+
+
+
+
+                   blackList(phoneanmber);
+
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        }catch(Exception ex){
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+    // Номер в чорном Списке ?
+    @Override
+    public boolean blackList(String phoneanmberblackList) {
+        try(Connection c = getConnection()){
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ? AND InBlacklist = 1; ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phoneanmberblackList);
+            ResultSet rs =   ps.executeQuery();
+            while (rs.next()){
+                int COUNTphonenanmber =   rs.getInt(1);
+
+                if (COUNTphonenanmber > 0){
+                    System.out.println("Номер в чорном списке");
+
+                }else {
+
+
+                    clientReadingSms();
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+
+
+            }
+            rs.next();
+
+        }catch(Exception ex){
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+    //Разбор текста клиента
+    @Override
+    public boolean smsSearchClient(String ActivationCode) {
+        try(Connection c = getConnection()){
+            String sql = "Select Count(*) From last_key_activation WHERE ActivationCode  like  ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, ActivationCode + "%");
+            ResultSet rs =   ps.executeQuery();
+            while (rs.next()){
+                int COUNTphonenanmber =   rs.getInt(1);
+
+                if (COUNTphonenanmber > 0){
+
+
+                    keyType(ActivationCode);
+
+
+                }else {
+
+
+                    send1SMS();
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        }catch(Exception ex){
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+
+
+    public boolean numberOfSMSDay(String phoneanmberblackList  ) throws SQLException {
+        try(Connection c = getConnection()){
+            String sql = "SELECT Phone FROM sms.log WHERE date > (NOW() - INTERVAL 24 hour) group by Phone having count(*)> 5 = ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1,phoneanmberblackList );
+            ResultSet rs =   ps.executeQuery();
+            while (rs.next()){
+                int COUNTphonenanmber =   rs.getInt(1);
+
+                if (COUNTphonenanmber > 0){
+
+
+                    clientReadingSms();
+
+                }else {
+
+
+
+                     send1SMS();
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        }catch(Exception ex){
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    //Расбор текста Administratora
+    @Override
+    public boolean smsSearchAdmin(String ActivationCode) {
+        try(Connection c = getConnection()){
+            String sql = "Select Count(*) From last_key_activation WHERE ActivationCode  like  ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, ActivationCode + "%");
+            ResultSet rs =   ps.executeQuery();
+            while (rs.next()){
+                int COUNTphonenanmber =   rs.getInt(1);
+
+                if (COUNTphonenanmber > 0){
+
+
+
+
+                }else {
+
+
+                    sendSMS();
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        }catch(Exception ex){
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    // Проверяем есть номе в PhoneNumber
+    //@Override
+
+    public boolean phone(String phone, String SMS, String DateEvent) {
+        try (Connection c = getConnection()) {
+            c.setAutoCommit(false);
+
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ?  ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phone);
+            ResultSet rs = ps.executeQuery();
+            boolean phoneNumberExists = false;
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+                phoneNumberExists = COUNTphonenanmber > 0;
+            }
+            if (phoneNumberExists) {
+
+
+                //sql = "INSERT INTO phones (PhoneNumber )  VALUES  (?)";
+                //ps = c.prepareStatement(sql);
+                //ps.setString(1, phone);
+                //ps.execute();
+
+                sql = "INSERT INTO log_sms (idPhone, SMS, DateEvent) VALUES( (SELECT idPhone FROM phones WHERE phones.PhoneNumber=?) , ?, ? )";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, phone);
+                ps.setString(2, SMS);
+                Date date =  format.parse(DateEvent);
+                ps.setTimestamp(3, new Timestamp(date.getTime()));
+                ps.execute();
+
+                isadminNamber(phone);
+
+            } else {
+                sql = "INSERT INTO phones (PhoneNumber )  VALUES  (?)";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, phone);
+                ps.execute();
+
+
+                sql = "INSERT INTO log_sms (idPhone, SMS, DateEvent) VALUES( (SELECT idPhone FROM phones WHERE phones.PhoneNumber=?) , ?, ? )";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, phone);
+                ps.setString(2, SMS);
+                Date date =  format.parse(DateEvent);
+                ps.setTimestamp(3, new Timestamp(date.getTime()));
+                ps.execute();
+
+
+
+                String query = "SELECT SMS FROM log_sms ORDER BY DateEvent DESC LIMIT 1";
+                Statement stmt = c.createStatement();
+                rs = stmt.executeQuery(query);
+                while (rs.next()) {
+                    String TextMessages = rs.getString("SMS");
+                    TextMessages = TextMessages;
+                    Pattern pattern = Pattern.compile("\\d+\\S?\\d*");
+                    Matcher matcher = pattern.matcher(TextMessages);
+                    while (matcher.find()) {
+                        String Text = matcher.group(0);
+                        if (Text.replaceAll("\\D", " ").length() == Text.length()) {
+                            int b = Integer.parseInt(Text);
+                            if (b > 0){
+                                Dao dao= new DaoImpl();
+                                dao.smsSearchClient(Text);
+                                System.out.println("Client");
+                            }else {
+                                send1SMS();
+                            }
+                        }
+
+                    }
+                }
+
+                clientReadingSms();
+            }
+            c.commit();
+
+            return phoneNumberExists;
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+    }
+
+
+    public static void save(String phoneanumber) throws IOException {
+        try (Connection c = getConnection1()) {
+            String sql = "INSERT INTO phones (PhoneNumber )  VALUES  (?)";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phoneanumber);
+            ps.execute();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+    }
+
+    private static Connection getConnection1() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    public String keyType (String code) {
+        try (Connection c = getConnection()) {
+            String sql = "select type from key_type where idKeyType = (select idKeyType from last_key_type   where idLastKeyType = ? ) ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, code);
+
+            String keyType = null;
+            ResultSet resultSet = ps.executeQuery();
+            while (resultSet.next()) {
+                keyType = resultSet.getString(1);
+
+                String s = "Основной";
+                String d = "Запасной";
+                String f = "Сервесный";
+                if (keyType.equals(s)){
+
+                    System.out.println("Тип ключа основной, Можно");
+
+                }else {
+                    if (keyType.equals(d)){
+                        System.out.println("Запасной тип ключа, Запрешено активировать ");
+                    }if (keyType.equals(f)){
+
+                        System.out.println("Запрешено активировать");
+                    }
+
+
+                }
+
+            }
+
+            return keyType;
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+
+
+
+
+
+    }
+
+
+    public String decode(String keyName,String serialNumber ) throws IOException, InterruptedException {
+
+        String date = "20200708";
+
+        String[] command =
+                {
+                        "cmd",
+                };
+        Process p = Runtime.getRuntime().exec(command);
+        new Thread(new SyncPipe(p.getErrorStream(), System.err)).start();
+        new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
+        PrintWriter stdin = new PrintWriter(p.getOutputStream());
+        stdin.println("C:\\tdes_ecb.exe " + keyName + " " + serialNumber +" " +date);
+        // write any other commands you want here
+        stdin.close();
+        int returnCode = p.waitFor();
+        System.out.println(  returnCode);
+
+
+        String code = Integer.toString(returnCode);
+
+
+        return code;
+    }
+
+    @Override
+    public String decode(String text) throws IOException, InterruptedException {
+        return null;
+    }
+
+    static class SyncPipe implements Runnable
+    {
+        public SyncPipe(InputStream istrm, OutputStream ostrm) {
+            istrm_ = istrm;
+            ostrm_ = ostrm;
+        }
+        public void run() {
+            try
+            {
+                final byte[] buffer = new byte[1024];
+                for (int length = 0; (length = istrm_.read(buffer)) != -1; )
+                {
+                    ostrm_.write(buffer, 0, length);
+                }
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+        private final OutputStream ostrm_;
+        private final InputStream istrm_;
+    }
+}
+
+
+
+
+
+
+
