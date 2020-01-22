@@ -1,0 +1,78 @@
+/import TestRuntame.Cmd;
+
+import com.sun.org.apache.bcel.internal.classfile.Code;
+
+import java.io.*;
+import java.sql.*;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class MainClass {
+
+
+    public static void main(String[] args) throws SQLException, IOException, InterruptedException {
+
+
+        numberMessagesDay("79889995520");
+
+
+    }
+
+
+    public static void numberMessagesDay(String phone) throws SQLException, InterruptedException {
+
+
+        Connection con = getConnectionnumberMessagesDay();
+        String query = "select idPhone  from log_sms where DateEvent > (NOW()- INTERVAL 24 hour ) group by idPhone having COUNT(*)>=5 ";
+        PreparedStatement ps1 = con.prepareStatement("select idPhone from phones where PhoneNumber = ?");
+        ps1.setString(1, phone);
+        ResultSet rs1 = ps1.executeQuery();
+
+        try (Statement stmt = con.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                String idphone1 = rs.getString("idPhone");
+                int parsId1 = Integer.parseInt(idphone1);
+
+                System.out.println(idphone1);
+
+                while (rs1.next()) {
+                    String idphone2 = rs1.getString("idPhone");
+                    int parsId = Integer.parseInt(idphone2);
+
+                    System.out.println(idphone2);
+                    if (parsId >= parsId1) {
+                        System.out.println(" Привышен лимит смс в день");
+
+
+
+                    }else {
+
+
+                    }
+                }
+
+            }
+        }
+
+    }
+
+
+    public static Connection getConnectionnumberMessagesDay() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+}
+
+
+
+
+
