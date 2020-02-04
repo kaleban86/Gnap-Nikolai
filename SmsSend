@@ -1,0 +1,565 @@
+package com.app.sms.sending.sms;
+
+import com.app.dao.DaoImpl;
+import com.app.sms.reader.impl.ClientReadingSms;
+import com.app.sms.reader.impl.ReadSmsAdministrator;
+import com.app.sms.reader.impl.SimpleSmsReader;
+import com.app.text.decoder.impl.SimpleDecoder;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TerminalSendSMS    implements SendSms {
+
+
+
+    public static boolean noKeyBd(String Phoneanmber) {
+
+
+
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "Ошибка! Данный номер USB ключа не найден. ";
+                String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+    public static void noKeySms() throws SQLException {
+        String query = "select log_sms.idPhone from log_sms where idPhone order by DateEvent DESC limit 1";
+        try (Connection con = getConnection();
+             Statement stmt = con.createStatement()) {
+            ResultSet rs = stmt.executeQuery(query);
+            while (rs.next()) {
+                String Phoneanmber = rs.getString("idPhone");
+
+
+                phoneNumber1(Phoneanmber);
+            }
+
+        }
+    }
+
+    public static boolean phoneNumber1(String Phoneanmber) {
+        try (Connection c = getConnection()) {
+            String sql = "select PhoneNumber from phones where idPhone = ?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, Phoneanmber);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+
+                String phone = rs.getString("PhoneNumber");
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "Ошибка! Введите номер USB ключа. ";
+                String main = send + gap + phone + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+            }
+            rs.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    public static Connection getConnection() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+
+    public static boolean smsvid5(String Phoneanmber) {
+
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "nnnn|nnnn? nnnn dd.mm.yy|nnnn on/off";
+                String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+
+
+
+    public static boolean spareKey(String Phoneanmber) {
+
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "Ошибка! Данный USB ключ запасной, можно акитивировать только основной!";
+                String main = send + gap +Phoneanmber + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+
+
+
+
+        return false;
+    }
+
+
+
+    public static boolean serviceKey(String Phoneanmber) {
+
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "Ошибка! Данный USB ключ Вам запрещено активировать.";
+                String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+
+
+
+
+        return false;
+    }
+
+
+
+
+
+    public static boolean oldKey(String Phoneanmber) {
+
+
+                String bash = "bash";
+                String cc = "-c";
+                String send = "sendsms ";
+                String gap = " ";
+                String text = "Используте старый код активации";
+                String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+                Process p = null;
+                try {
+                    p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line = null;
+
+                while (true) {
+                    try {
+                        if (!((line = input.readLine()) != null)) break;
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    System.out.println(line);
+                }
+
+                int exitVal = 0;
+                try {
+                    exitVal = p.waitFor();
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+                System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+
+
+    public static boolean smsInfo(String Phoneanmber, String ActivationCode, String nameOrg, String DateActivation, long diffDays, String keyType) {
+
+
+        String bash = "bash";
+        String cc = "-c";
+        String send = "sendsms ";
+        String gap = " ";
+        String text = ActivationCode+","+nameOrg+","+DateActivation+", "+diffDays+", "+keyType;
+        String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line = null;
+
+        while (true) {
+            try {
+                if (!((line = input.readLine()) != null)) break;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println(line);
+        }
+
+        int exitVal = 0;
+        try {
+            exitVal = p.waitFor();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+    public static boolean typKeySpare(String Phoneanmber,String key) {
+
+
+        String bash = "bash";
+        String cc = "-c";
+        String send = "sendsms ";
+        String gap = " ";
+        String text = "Ключ"+key+"сменен на Запасной";
+        String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line = null;
+
+        while (true) {
+            try {
+                if (!((line = input.readLine()) != null)) break;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println(line);
+        }
+
+        int exitVal = 0;
+        try {
+            exitVal = p.waitFor();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+    public static boolean typKeyMain(String Phoneanmber,String key) {
+
+
+        String bash = "bash";
+        String cc = "-c";
+        String send = "sendsms ";
+        String gap = " ";
+        String text = "Ключ"+key+"сменен на Основной";
+        String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line = null;
+
+        while (true) {
+            try {
+                if (!((line = input.readLine()) != null)) break;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println(line);
+        }
+
+        int exitVal = 0;
+        try {
+            exitVal = p.waitFor();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+
+
+
+    public static boolean keySmsSend( String ActivationCode,String Phoneanmber) {
+
+
+        String bash = "bash";
+        String cc = "-c";
+        String send = "sendsms ";
+        String gap = " ";
+        String text = "Код ключа "+ActivationCode;
+        String main = send + gap + Phoneanmber + gap + "'" + text + "'";
+        Process p = null;
+        try {
+            p = Runtime.getRuntime().exec(new String[]{bash, cc, main});
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+
+        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+        String line = null;
+
+        while (true) {
+            try {
+                if (!((line = input.readLine()) != null)) break;
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+            System.out.println(line);
+        }
+
+        int exitVal = 0;
+        try {
+            exitVal = p.waitFor();
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        System.out.println("Exited with error code " + exitVal);
+
+
+
+
+        return false;
+    }
+    public static void sendSmsNameCompani(){
+
+        System.out.println("Машоил");
+
+    }
+
+    public static void sendSMS(){
+
+
+        System.out.println("nnnn|nnnn? nnnn dd.mm.yy|nnnn on/off");
+
+    }
+
+    public static void send1SMS(){
+
+
+        System.out.println("Ошибка Данный номер не найден");
+    } public static void send2SMS(){
+
+        System.out.println("Машоил");
+    }
+
+    public void sendNull(){
+
+        System.out.println("Видите номер ключа");
+    }
+
+
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
