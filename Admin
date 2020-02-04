@@ -1,0 +1,421 @@
+package com.app.sms.reader.impl;
+
+import com.app.dao.Dao;
+import com.app.dao.DaoImpl;
+import com.app.sms.sending.sms.TerminalSendSMS;
+
+import java.io.*;
+import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class ReadSmsAdministrator extends TerminalSendSMS {
+
+
+    public static void readSmsAdministrator(String SMS, String Phone) throws SQLException, InterruptedException, IOException {
+
+
+        //  Dao dao = new DaoImpl();
+        // dao.smsSearchKeyBdAdmin(SMS,Phone);
+        // System.out.println(SMS+"Administrator");
+
+
+        String sms1 = "help";
+        if (sms1.equals(SMS)) {
+
+            System.out.println("nnnn|nnnn?");
+        }
+        try {
+
+
+            SMS = SMS;
+            Pattern pattern = Pattern.compile("(0?[1-9]|1[12])");
+            Matcher matcher = pattern.matcher(SMS);
+            while (matcher.find()) {
+                String Text = matcher.group(0);
+                if (Text.replaceAll("\\D", " ").length() == Text.length()) {
+
+
+                    String string = SMS;
+                    String[] parts = string.split("-");
+                    String key = parts[0];
+                    String date = parts[1];
+
+
+                    int s = Integer.parseInt(key);
+                  if (s > 0){
+
+                      key(key, date);
+                  }
+
+
+
+                }
+                //key(key, date);
+
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+
+        }
+
+
+        SMS = SMS;
+        Pattern pattern = Pattern.compile("on");
+        Matcher matcher = pattern.matcher(SMS);
+        while (matcher.find()) {
+            String Text = matcher.group(0);
+            if (Text.replaceAll("\\D", " ").length() == Text.length()) {
+
+
+                String taboo = "on";
+                String s = SMS;
+
+                for (char c : taboo.toCharArray()) {
+                    s = s.replace("on", " ");
+
+                    String key = "2";
+                    saveKey(s, key);
+                }
+
+
+            }
+        }
+
+        SMS = SMS;
+        Pattern pattern1 = Pattern.compile("off");
+        Matcher matcher1 = pattern1.matcher(SMS);
+        while (matcher1.find()) {
+            String Text = matcher1.group(0);
+            if (Text.replaceAll("\\D", " ").length() == Text.length()) {
+
+
+                String taboo = "off";
+                String s = SMS;
+
+                for (char c : taboo.toCharArray()) {
+                    s = s.replace("off", " ");
+
+                    String key = "3";
+                    saveKey(s, key);
+                }
+
+
+            }
+        }
+
+        SMS = SMS;
+        Pattern pattern3 = Pattern.compile("[?]");
+        Matcher matcher3 = pattern3.matcher(SMS);
+        while (matcher3.find()) {
+
+
+            String taboo = "?";
+            String s = SMS;
+
+            for (char c : taboo.toCharArray()) {
+                s = s.replace("?", " ");
+
+
+                typeKey(s);
+            }
+
+
+        }
+
+
+    }
+
+
+    public static void saveKey(String s, String key) {
+        try (Connection c = getConnection10()) {
+            String sql = "update last_key_type set idKeyType=? where idLastKeyType =?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, key);
+            ps.setString(2, s);
+
+            ps.executeUpdate();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+    }
+
+
+    public static String typeKey(String ActivationCode) throws SQLException {
+        try (Connection c = getConnection11()) {
+            String sql = "select type from key_type where idKeyType = (select idKeyType from last_key_type   where idLastKeyType = ? ) ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, ActivationCode);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String keyType = rs.getString(1);
+
+                System.out.println(keyType);
+
+
+                sql = "select idOrg from usb_keys where SerialNum = ? ";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, ActivationCode);
+                rs = ps.executeQuery();
+                while (rs.next()) {
+                    String name = rs.getString(1);
+
+                    sql = "select Name from org where idOrg = ? ";
+                    ps = c.prepareStatement(sql);
+                    ps.setString(1, name);
+                    rs = ps.executeQuery();
+                    while (rs.next()) {
+                        String nameOrg = rs.getString(1);
+
+                        System.out.println(nameOrg);
+
+                        sql = "select DateActivation from last_key_activation where ActivationCode like  ?";
+                        ps = c.prepareStatement(sql);
+                        ps.setString(1, ActivationCode + "%");
+                        rs = ps.executeQuery();
+                        while (rs.next()) {
+                            String DateActivation = rs.getString(1);
+
+                            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                            long timeUp = format.parse(DateActivation).getTime();
+                            long diff = System.currentTimeMillis() - timeUp;
+                            long diffDays = diff / (24 * 60 * 60 * 1000);
+
+
+                            System.out.println(DateActivation);
+                            System.out.println(diffDays);
+
+                            dateActivation(ActivationCode);
+
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        return ActivationCode;
+    }
+
+
+    public static void dateActivation(String code) throws SQLException, ParseException {
+        try (Connection c = getConnection10()) {
+            String sql3 = "select DateActivation from last_key_activation where ActivationCode like  ?";
+            PreparedStatement ps3 = c.prepareStatement(sql3);
+            ps3.setString(1, code + "%");
+            ResultSet resultSet1 = ps3.executeQuery();
+            while (resultSet1.next()) {
+                String DateActivation = resultSet1.getString(1);
+
+                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                long timeUp = format.parse(DateActivation).getTime();
+                long diff = System.currentTimeMillis() - timeUp;
+                long diffDays = diff / (24 * 60 * 60 * 1000);
+
+
+                System.out.println(DateActivation);
+                System.out.println(diffDays);
+
+
+            }
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+
+    }
+
+    public static String key(String codeKey, String date) throws SQLException, IOException, InterruptedException {
+
+
+        try (Connection con = getConnection11();
+             Statement statement = con.createStatement()) {
+            PreparedStatement ps = con.prepareStatement("select Code from usb_keys where SerialNum = ?");
+            ps.setString(1, codeKey);
+            PreparedStatement ps1 = con.prepareStatement("select ActivationCode from last_key_activation where ActivationCode like ?");
+            ps1.setString(1, codeKey + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                byte[] Code = rs.getBytes("Code");
+                final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+                byte[] bytes = Code;
+                char[] hexChars = new char[bytes.length * 2];
+                for (int j = 0; j < bytes.length; j++) {
+                    int v = bytes[j] & 0xFF;
+                    hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+                    hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+                }
+
+                ResultSet rs1 = ps1.executeQuery();
+                while (rs1.next()) {
+                    String code = rs1.getString("ActivationCode");
+                    String b = code.replaceAll(" ", "");
+                    char[] charArray = hexChars;
+                    String str = String.valueOf(charArray);
+
+
+                    activation(str, b, date);
+                }
+
+
+            }
+
+
+            rs.close();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+
+
+        return codeKey;
+    }
+
+    public static String activation(String serialNumber, String keyName, String Date) throws IOException, InterruptedException, SQLException {
+
+
+        String[] command =
+                {
+                        "cmd",
+                };
+        Process p = Runtime.getRuntime().exec(command);
+        new Thread(new SyncPipe(p.getErrorStream(), System.err)).start();
+        new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
+        PrintWriter stdin = new PrintWriter(p.getOutputStream());
+        stdin.println("C:\\tdes_ecb.exe " + keyName + " " + serialNumber + " " + Date);
+        // write any other commands you want here
+        stdin.close();
+        int returnCode = p.waitFor();
+        String code = Integer.toString(returnCode);
+
+        SyncPipe syncPipe = new SyncPipe();
+
+        syncPipe.getKey(syncPipe.key);
+        syncPipe.setKey(syncPipe.key);
+
+        System.out.println(syncPipe.key);
+
+
+        return code;
+    }
+
+
+    public static class SyncPipe implements Runnable {
+
+        public  static   String key;
+        public SyncPipe() {
+            super();
+            this.key = key;
+        }
+
+        public String getKey(String key){
+
+            return key;
+        }
+
+        public void setKey(String key) {
+            this.key = key;
+        }
+
+        public SyncPipe(InputStream istrm, OutputStream ostrm) {
+            istrm_ = istrm;
+            ostrm_ = ostrm;
+
+        }
+
+        public void run() {
+            try {
+                final byte[] buffer = new byte[1024];
+
+                byte[] b = new byte[1];
+
+                StringBuilder s = new StringBuilder();
+
+                int c1 = 0;
+                while ((c1 = istrm_.read()) > 0) {
+                    s.append((char) c1);
+                }
+
+                String[] aa = s.toString().split("\n");
+
+                for (String retval : aa) {
+
+                }
+                try {
+
+                   key = aa[4];
+
+
+                } catch (ArrayIndexOutOfBoundsException e) {
+
+                }
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        private OutputStream ostrm_;
+        private InputStream istrm_;
+
+
+
+    }
+
+
+
+
+
+
+    public static Connection getConnection10() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+    public static Connection getConnection11() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
