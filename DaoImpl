@@ -1,0 +1,653 @@
+package com.app.dao;
+
+import com.app.sms.reader.impl.ReadSmsAdministrator;
+import com.app.sms.reader.impl.SimpleSmsReader;
+
+
+import java.io.*;
+import java.sql.*;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Calendar;
+import java.util.Date;
+ //ReadSmsAdministrator.SyncPipe syncPipe = new ReadSmsAdministrator.SyncPipe();
+import static com.app.sms.reader.impl.ClientReadingSms.clientReadingSms;
+
+public class DaoImpl extends SimpleSmsReader implements Dao {
+
+
+    public static boolean idPhone24Hour(String Phone, String SMS) {
+        try (Connection c = getConnection1()) {
+            String sql1 = "select idPhone from phones where PhoneNumber = ? ";
+            PreparedStatement ps1 = c.prepareStatement(sql1);
+            ps1.setString(1, Phone);
+            ResultSet rs1 = ps1.executeQuery();
+            while (rs1.next()) {
+                String id = rs1.getString("idPhone");
+
+                id24hour(Phone, id, SMS);
+            }
+            rs1.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    public static boolean id24hour(String Phone, String idPhone, String SMS) {
+        try (Connection c = getConnection1()) {
+            String sql = "Select count(*) from log_sms WHERE DateEvent >= CURDATE() - INTERVAL 24 hour and idPhone=?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, idPhone);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+                if (COUNTphonenanmber < 5) {
+
+
+                    clientReadingSms(SMS, Phone);
+
+
+                } else {
+
+
+                    System.out.println("Привышен лимит ");
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    private static Connection getConnection1() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    // Номер в чорном Списке ?
+
+    public static boolean blackList(String phoneanmberblackList, String SMS) {
+        try (Connection c = getConnection2()) {
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ? AND InBlacklist = 1; ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phoneanmberblackList);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+                if (COUNTphonenanmber > 0) {
+                    System.out.println("Номер в чорном списке");
+
+                } else {
+
+
+                    idPhone24Hour(phoneanmberblackList, SMS);
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+    public static Connection getConnection2() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+    //Расбор текста клиента
+    @Override
+    public boolean smsSearchKeyBdClient(String SMS, String Phone) {
+        try (Connection c = getConnection3()) {
+            String sql = "Select Count(*) From last_key_activation WHERE ActivationCode  like  ?";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, SMS + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+                if (COUNTphonenanmber > 0) {
+
+                    dateActivation(SMS, Phone);
+                } else {
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+    @Override
+    public boolean smsSearchKeyBdAdmin(String SMS, String Phone) {
+        try (Connection c = getConnection3()) {
+            String sql = "Select Count(*) From last_key_activation WHERE ActivationCode  like  ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, SMS + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+                if (COUNTphonenanmber > 0) {
+
+
+                    dateActivation(SMS, Phone);
+
+
+                } else {
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.close();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    public static Connection getConnection3() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    // Проверяем есть номер в PhoneNumber
+    @Override
+    public boolean phone(String phone, String SMS, String DateEvent) {
+        try (Connection c = getConnection4()) {
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phone);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+                if (COUNTphonenanmber > 0) {
+
+
+                    String sql1 = "select idPhone from phones where PhoneNumber = ? ";
+                    PreparedStatement ps1 = c.prepareStatement(sql1);
+                    ps1.setString(1, phone);
+                    ResultSet rs1 = ps1.executeQuery();
+                    while (rs1.next()) {
+                        String idPhone = rs1.getString("idPhone");
+
+                        save(idPhone, phone, SMS, DateEvent);
+
+
+                    }
+
+
+                } else {
+
+                    save(phone);
+                    idPhone(phone, SMS, DateEvent);
+
+
+                }
+                return COUNTphonenanmber > 0;
+
+
+            }
+            rs.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+    public static Connection getConnection4() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    public static void save(String phoneanumber) throws IOException {
+        try (Connection c = getConnection5()) {
+            String sql = "INSERT INTO phones (PhoneNumber )  VALUES  (?)";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, phoneanumber);
+            ps.execute();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+    }
+
+
+    public static void idPhone(String Phone, String SMS, String Date) throws SQLException {
+
+        try (Connection c = getConnection5()) {
+            String sql = "select idPhone from phones where PhoneNumber = ? ";
+
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, Phone);
+            ps.execute();
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+
+                String idPhone = rs.getString("idPhone");
+                save(idPhone, Phone, SMS, Date);
+
+
+            }
+
+        }
+    }
+
+    public static Connection getConnection5() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+    public static boolean save(String idPhone, String PhoneNumber, String SMS, String DateEvent) {
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try (Connection c = getConnection6()) {
+            c.setAutoCommit(false);
+
+            String sql = "Select Count(*) From phones WHERE PhoneNumber = ? AND Admin = 1 ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, PhoneNumber);
+            ResultSet rs = ps.executeQuery();
+            boolean phoneNumberExists = false;
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+                phoneNumberExists = COUNTphonenanmber > 0;
+            }
+            if (phoneNumberExists) {
+
+
+                sql = "INSERT INTO log_sms (idPhone, SMS, DateEvent) VALUES(?, ?, ? )";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, idPhone);
+                ps.setString(2, SMS);
+                Date date = format.parse(DateEvent);
+                ps.setTimestamp(3, new Timestamp(date.getTime()));
+                ps.execute();
+
+
+                readSmsAdministrator(SMS, PhoneNumber);
+            } else {
+
+
+                sql = "INSERT INTO log_sms (idPhone, SMS, DateEvent) VALUES (?, ?, ? )";
+                ps = c.prepareStatement(sql);
+                ps.setString(1, idPhone);
+                ps.setString(2, SMS);
+                Date date = format.parse(DateEvent);
+                ps.setTimestamp(3, new Timestamp(date.getTime()));
+                ps.execute();
+
+
+                blackList(PhoneNumber, SMS);
+            }
+            c.commit();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+        return false;
+    }
+
+
+    private static Connection getConnection6() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+    public static void dateActivation(String code, String Phone) throws SQLException, ParseException, IOException, InterruptedException {
+        try (Connection c = getConnection7()) {
+            String sql1 = "Select Count(*) From last_key_activation WHERE ActivationCode  like  ? ";
+            PreparedStatement ps1 = c.prepareStatement(sql1);
+            ps1.setString(1, code + "%");
+            ResultSet rs = ps1.executeQuery();
+            while (rs.next()) {
+                int COUNTphonenanmber = rs.getInt(1);
+
+
+                if (COUNTphonenanmber > 0) {
+
+
+                    String sq2 = "select type from key_type where idKeyType = (select idKeyType from last_key_type   where idLastKeyType = ? ) ";
+                    PreparedStatement ps2 = c.prepareStatement(sq2);
+                    ps2.setString(1, code);
+                    ResultSet resultSet = ps2.executeQuery();
+                    while (resultSet.next()) {
+                        String keyType = resultSet.getString(1);
+
+                        String mainKey = "Основной";
+                        String spareKey = "Запасной";
+                        String serviceKey = "Сервисный";
+                        if (keyType.equals(serviceKey)) {
+                            System.out.println("Запрешено активировать");
+                        }
+                        if (keyType.equals(spareKey)) {
+
+                            System.out.println("Запасной ключ");
+                        }
+                        if (keyType.equals(mainKey)) {
+
+
+                            String sql3 = "select DateActivation from last_key_activation where ActivationCode like  ?";
+                            PreparedStatement ps3 = c.prepareStatement(sql3);
+                            ps3.setString(1, code + "%");
+                            ResultSet resultSet1 = ps3.executeQuery();
+                            while (resultSet1.next()) {
+                                String DateActivation = resultSet1.getString(1);
+
+
+                                SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+                                long timeUp = format.parse(DateActivation).getTime();
+                                long diff = System.currentTimeMillis() - timeUp;
+                                long diffDays = diff / (24 * 60 * 60 * 1000);
+
+                                if (diffDays >= 303) {
+
+                                    key(code, code, Phone, DateActivation);
+
+                                } else {
+                                    System.out.println("Старый ключ");
+
+                                }
+
+                            }
+
+                        }
+
+
+                    }
+                }
+
+
+            }
+
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+    }
+
+    public static Connection getConnection7() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+    public static String key(String codeKey, String ActivationCode, String Phone, String DateActivation) throws SQLException, IOException, InterruptedException {
+
+
+        try (Connection con = getConnection8();
+             Statement statement = con.createStatement()) {
+            PreparedStatement ps = con.prepareStatement("select Code from usb_keys where SerialNum = ?");
+            ps.setString(1, codeKey);
+            PreparedStatement ps1 = con.prepareStatement("select ActivationCode from last_key_activation where ActivationCode like ?");
+            ps1.setString(1, ActivationCode + "%");
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                byte[] Code = rs.getBytes("Code");
+                final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+                byte[] bytes = Code;
+                char[] hexChars = new char[bytes.length * 2];
+                for (int j = 0; j < bytes.length; j++) {
+                    int v = bytes[j] & 0xFF;
+                    hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+                    hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+                }
+
+                ResultSet rs1 = ps1.executeQuery();
+                while (rs1.next()) {
+                    String code = rs1.getString("ActivationCode");
+                    String b = code.replaceAll(" ", "");
+                    char[] charArray = hexChars;
+                    String str = String.valueOf(charArray);
+
+
+                    idKey(str, b, Phone, DateActivation,codeKey);
+
+
+                }
+
+
+            }
+
+
+            rs.close();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
+
+
+        return codeKey;
+    }
+
+    public static boolean idKey(String serialNumber, String keyName, String Phone, String DateActivati,String codeKey) {
+        try (Connection c = getConnection1()) {
+            String sql = "select  idKey from last_key_activation where ActivationCode like  ? ";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, codeKey + "%" );
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                String idKey = rs.getString(1);
+
+
+                activation2(serialNumber,keyName,Phone,DateActivati,idKey);
+            }
+            rs.close();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+
+
+    public static String activation2(String serialNumber, String keyName, String Phone, String DateActivati,String idKey) throws IOException, InterruptedException, SQLException {
+        LocalDate futureDate = LocalDate.now().plusMonths(12);
+        String DateActivation = futureDate.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        String[] command =
+                {
+                        "cmd",
+                };
+        Process p = Runtime.getRuntime().exec(command);
+        new Thread(new ReadSmsAdministrator.SyncPipe(p.getErrorStream(), System.err)).start();
+        new Thread(new ReadSmsAdministrator.SyncPipe(p.getInputStream(), System.out)).start();
+        PrintWriter stdin = new PrintWriter(p.getOutputStream());
+        stdin.println("C:\\tdes_ecb.exe " + keyName + " " + serialNumber + " " + DateActivation);
+        // write any other commands you want here
+        stdin.close();
+        int returnCode = p.waitFor();
+        String code = Integer.toString(returnCode);
+
+
+        ReadSmsAdministrator.SyncPipe syncPipe = new ReadSmsAdministrator.SyncPipe();
+
+        syncPipe.getKey(SyncPipe.key);
+
+        idPhoneDB(Phone, SyncPipe.key,idKey);
+
+        return code;
+    }
+
+
+    public static boolean idPhoneDB(String Phone, String key,String idKEy) {
+        try (Connection c = getConnection1()) {
+            String sql1 = "select idPhone from phones where PhoneNumber = ? ";
+            PreparedStatement ps1 = c.prepareStatement(sql1);
+            ps1.setString(1, Phone);
+            ResultSet rs1 = ps1.executeQuery();
+            while (rs1.next()) {
+                String id = rs1.getString("idPhone");
+                LocalDateTime futureDate = LocalDateTime.now().plusMonths(12);
+                DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+                String Data = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime());
+                saveDB(dtf.format(futureDate),  key, id,Data,idKEy);
+
+            }
+            rs1.next();
+
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+        return false;
+    }
+
+
+
+    public static void saveDB(String DateActivation , String  ActivationCode,String idPhone, String DateEvent,String idKey ) throws IOException {
+
+        DateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        try (Connection c = getConnection2()) {
+            String sql = "insert into last_key_activation (DateActivation,ActivationCode,idPhone,DateEvent,idKey) values (?,?,?,?,?)";
+            PreparedStatement ps = c.prepareStatement(sql);
+            ps.setString(1, String.valueOf(DateActivation));
+            ps.setString(2, ActivationCode );
+            ps.setString(3,idPhone );
+            Date date = format.parse(DateEvent);
+            ps.setTimestamp(4, new Timestamp(date.getTime()));
+            ps.setString(5, idKey );
+            ps.execute();
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+
+        }
+
+
+    }
+
+
+
+
+
+
+
+
+
+
+    public static Connection getConnection8() throws SQLException {
+
+
+        return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+    }
+
+
+
+
+    public String key(String key){
+
+        return key;
+    }
+
+
+        public static Connection getConnection11() throws SQLException {
+
+
+            return DriverManager.getConnection("jdbc:mysql://localhost:3306/usb_key", "root", "530433");
+
+
+        }
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
