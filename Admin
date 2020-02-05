@@ -274,94 +274,30 @@ public class ReadSmsAdministrator extends TerminalSendSMS {
         return codeKey;
     }
 
-    public static String activation(String serialNumber, String keyName, String Date) throws IOException, InterruptedException, SQLException {
+   public static String activation(String serialNumber, String keyName, String Date) {
 
 
-        String[] command =
-                {
-                        "cmd",
-                };
-        Process p = Runtime.getRuntime().exec(command);
-        new Thread(new SyncPipe(p.getErrorStream(), System.err)).start();
-        new Thread(new SyncPipe(p.getInputStream(), System.out)).start();
-        PrintWriter stdin = new PrintWriter(p.getOutputStream());
-        stdin.println("C:\\tdes_ecb.exe " + keyName + " " + serialNumber + " " + Date);
-        // write any other commands you want here
-        stdin.close();
-        int returnCode = p.waitFor();
-        String code = Integer.toString(returnCode);
+        try {
 
-        SyncPipe syncPipe = new SyncPipe();
+            Process p = Runtime.getRuntime().exec(new String[]{"bash", "-c", "/home/user/Загрузки/tdes_ecb.exe " + " " + serialNumber + " " + keyName + " " + Date});
 
-        syncPipe.getKey(syncPipe.key);
-        syncPipe.setKey(syncPipe.key);
+            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line = null;
 
-        System.out.println(syncPipe.key);
+            while ((line = input.readLine()) != null) {
 
 
-        return code;
-    }
-
-
-    public static class SyncPipe implements Runnable {
-
-        public  static   String key;
-        public SyncPipe() {
-            super();
-            this.key = key;
-        }
-
-        public String getKey(String key){
-
-            return key;
-        }
-
-        public void setKey(String key) {
-            this.key = key;
-        }
-
-        public SyncPipe(InputStream istrm, OutputStream ostrm) {
-            istrm_ = istrm;
-            ostrm_ = ostrm;
-
-        }
-
-        public void run() {
-            try {
-                final byte[] buffer = new byte[1024];
-
-                byte[] b = new byte[1];
-
-                StringBuilder s = new StringBuilder();
-
-                int c1 = 0;
-                while ((c1 = istrm_.read()) > 0) {
-                    s.append((char) c1);
-                }
-
-                String[] aa = s.toString().split("\n");
-
-                for (String retval : aa) {
-
-                }
-                try {
-
-                   key = aa[4];
-
-
-                } catch (ArrayIndexOutOfBoundsException e) {
-
-                }
-
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+
+            int exitVal = p.waitFor();
+            System.out.println("Exited with error code " + exitVal);
+
+        } catch (Exception e) {
+            System.out.println(e.toString());
+            e.printStackTrace();
         }
-        private OutputStream ostrm_;
-        private InputStream istrm_;
 
-
-
+        return serialNumber;
     }
 
 
